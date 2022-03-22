@@ -139,10 +139,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="ことのはたんごヘルパー.cpp" />
+    <ClCompile Include="KotonohaTangoHelper.cpp" />
+    <ClCompile Include="regex.cpp" />
+    <ClCompile Include="word.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Regex.h" />
+    <ClInclude Include="regex.h" />
+    <ClInclude Include="word.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
