@@ -7,22 +7,46 @@
 
 int main()
 {
-    Regex reg;
-    std::wstring inp;
+    jubiman::Regex reg;
+    std::wstring inp, bl, gl, yl;
     std::wcin.imbue(std::locale("Japanese"));
     std::wcout.imbue(std::locale("Japanese"));
     std::cout << "Finished initializing!" << std::endl;
 
-    std::wcin >> inp;
-    reg.input(inp);
-    std::cout << "Found " << reg.search_all() << " matches." << std::endl;
+    bool solved = false;
+    while (!solved) {
+        std::cout << "New input:" << std::endl;
+        std::wcin >> inp;
+        reg.input(inp);
+        //std::cout << "Found " << reg.search_all() << " matches." << std::endl;
+        std::cout << "Found " << reg.search() << " matches." << std::endl;
 
-    std::wofstream wof(L"output/output.txt");
-    wof.imbue(std::locale(std::locale::empty(), new std::codecvt_utf8<wchar_t, 0x10ffff, std::generate_header>));
-    if(wof.is_open()) for (std::wstring match : reg.get_matches()) wof << match << std::endl;
-    wof.close();
+        // Write matches to file for easier read/search
+        std::wofstream wof(L"output/recent matches.txt");
+        wof.imbue(std::locale(std::locale::empty(), new std::codecvt_utf8<wchar_t, 0x10ffff, std::generate_header>));
+        if (wof.is_open()) for (std::wstring match : reg.get_matches()) wof << match << std::endl;
+        wof.close();
 
-    std::wcout<< L"Best word: " << reg.find_best_word() << std::endl;
+        std::cout << "Bad letters (wstring):" << std::endl;
+        std::wcin >> bl;
+        reg.add_bad_letters(bl);
+        std::cout << "Good letters L\"(wchar_t, int)\" seperated by a space with the position being 0-based index:" << std::endl;
+        std::wcin.ignore();
+        std::getline(std::wcin, gl);
+        reg.add_good_letters(gl);
+        std::cout << "Yellow letters L\"(wchar_t, int)\" seperated by a space with the position being 0-based index:" << std::endl;
+        std::getline(std::wcin, yl);
+        reg.add_yellow_letters(yl);
+
+        std::cout << "Found " << reg.set_query_and_search() << " matches." << std::endl;
+        
+        // Write matches to file for easier read/search
+        std::wofstream wof2(L"output/recent matches skimmed.txt");
+        wof2.imbue(std::locale(std::locale::empty(), new std::codecvt_utf8<wchar_t, 0x10ffff, std::generate_header>));
+        if (wof2.is_open()) for (std::wstring match : reg.get_matches()) wof2 << match << std::endl;
+        wof2.close();
+        //std::wcout << L"Best word: " << reg.find_best_word() << std::endl;
+    }
 }
 
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu
