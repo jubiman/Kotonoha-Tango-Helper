@@ -74,8 +74,8 @@ void jubiman::Regex::unique_elements(std::vector<T>& vec)
 
 	vec.clear();
 
-	for (auto p = m.begin(); p != m.end(); ++p)
-		if (p->second == 1) vec.push_back(p->first);
+	for (auto p = m.begin(); p != m.end(); ++p) vec.push_back(p->first);
+		//if (p->second == 1) vec.push_back(p->first);
 }
 
 
@@ -305,6 +305,7 @@ void jubiman::Regex::add_bad_letters(std::wstring bl) {
 
 // Add good letters
 void jubiman::Regex::add_good_letters(std::wstring gl) {
+	if (gl.empty()) return;
 	std::vector<std::wstring> strtuples;
 	size_t pos = 5;
 	while ((pos = gl.find(std::wstring(L") ("))) != std::wstring::npos) {
@@ -319,6 +320,7 @@ void jubiman::Regex::add_good_letters(std::wstring gl) {
 
 // Add yellow letters
 void jubiman::Regex::add_yellow_letters(std::wstring yl) {
+	if (yl.empty()) return;
 	std::vector<std::wstring> strtuples;
 	size_t pos = 5;
 	while ((pos = yl.find(L") (")) != std::wstring::npos) {
@@ -333,7 +335,7 @@ void jubiman::Regex::add_yellow_letters(std::wstring yl) {
 
 int jubiman::Regex::set_query_and_search() {
 	std::wstring tmp = L".....";
-	std::wstring arr[5] = {};
+	std::wstring arr[5] = {}, notArr[5] = {};
 
 	// Replace known letters
 	for (std::tuple<std::wstring, int> g : good_letters)
@@ -343,8 +345,7 @@ int jubiman::Regex::set_query_and_search() {
 	for (size_t i = 0; i < 5; ++i)
 		if (tmp.at(i) == L'.')
 			for (std::tuple<std::wstring, int> y : yellow_letters)
-				if (std::get<1>(y) != i)
-					arr[i] += std::get<0>(y);
+				std::get<1>(y) != i ? arr[i] += std::get<0>(y) : notArr[i] += std::get<0>(y);
 
 	for (unsigned int i = 0, j = 0; i < 5; ++i, ++j)
 		if (arr[i] != L"") {
@@ -358,11 +359,20 @@ int jubiman::Regex::set_query_and_search() {
 			}
 		}
 
-	for (size_t i = 0; i < tmp.length(); ++i)
+	/*for (size_t i = 0, j = 0; i < tmp.length(); ++i, ++j)
 		if (tmp.at(i) == L'.') {
-			tmp.replace(i, 1, L"[^" + bad_letters + L"]");
-			i += std::wstring(L"[^" + bad_letters + L"]").length();
+			tmp.replace(i, 1, L"[^" + bad_letters + notArr[j] + L"]");
+			i += std::wstring(L"[^" + bad_letters + notArr[j] + L"]").length()-1;
+		}*/
+	size_t pos = 0, i = 0, j;
+	while (tmp.at(0) == L'.' || (pos = tmp.find(L".", pos)) != std::wstring::npos) {
+		j = 0;
+		while ((i = tmp.find(L')', i + 1)) != std::wstring::npos && i < pos) {
+			++j;
 		}
+		tmp.replace(pos, 1, L"[^" + bad_letters + notArr[j] + L"]");
+		pos += std::wstring(L"[^" + bad_letters + notArr[j] + L"]").length() - 1;
+	}
 
 	query = tmp;
 	search();

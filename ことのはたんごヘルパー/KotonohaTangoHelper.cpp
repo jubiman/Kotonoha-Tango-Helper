@@ -15,17 +15,17 @@ int main()
 
     bool solved = false;
     while (!solved) {
-        std::cout << "New input:" << std::endl;
-        std::wcin >> inp;
-        reg.input(inp);
+        //std::cout << "New input:" << std::endl;
+        //std::wcin >> inp;
+        //reg.input(inp);
         //std::cout << "Found " << reg.search_all() << " matches." << std::endl;
-        std::cout << "Found " << reg.search() << " matches." << std::endl;
+        //std::cout << "Found " << reg.search() << " matches." << std::endl;
 
         // Write matches to file for easier read/search
-        std::wofstream wof(L"output/recent matches.txt");
-        wof.imbue(std::locale(std::locale::empty(), new std::codecvt_utf8<wchar_t, 0x10ffff, std::generate_header>));
-        if (wof.is_open()) for (std::wstring match : reg.get_matches()) wof << match << std::endl;
-        wof.close();
+        //std::wofstream wof(L"output/recent matches.txt");
+        //wof.imbue(std::locale(std::locale::empty(), new std::codecvt_utf8<wchar_t, 0x10ffff, std::generate_header>));
+        //if (wof.is_open()) for (std::wstring match : reg.get_matches()) wof << match << std::endl;
+        //wof.close();
 
         std::cout << "Bad letters (wstring):" << std::endl;
         std::wcin >> bl;
@@ -38,8 +38,12 @@ int main()
         std::getline(std::wcin, yl);
         reg.add_yellow_letters(yl);
 
-        std::cout << "Found " << reg.set_query_and_search() << " matches." << std::endl;
-        
+        int m;
+        std::cout << "Found " << (m = reg.set_query_and_search()) << " matches." << std::endl;
+        if (m == 1) {
+            std::wcout << L"Answer: " << reg.get_matches()[0] << std::endl;
+            solved = true;
+        }
         // Write matches to file for easier read/search
         std::wofstream wof2(L"output/recent matches skimmed.txt");
         wof2.imbue(std::locale(std::locale::empty(), new std::codecvt_utf8<wchar_t, 0x10ffff, std::generate_header>));
