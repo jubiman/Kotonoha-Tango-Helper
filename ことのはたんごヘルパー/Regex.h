@@ -9,8 +9,8 @@
 #include <vector>
 #include <tuple>
 #include <map>
+#include <math.h>
 
-#include "word.h"
 
 namespace jubiman {
 	class Regex {
@@ -18,11 +18,12 @@ namespace jubiman {
 		void init();
 		std::wstring query;
 		std::vector<std::wstring> results;
-		std::vector<Word> good_words;
+		std::vector<std::tuple<std::wstring, double>> good_words;
 		std::vector<wchar_t> used_letters;
 		std::wstring bad_letters;
-		std::vector<std::tuple<std::wstring, int>> good_letters; // char, pos
-		std::vector<std::tuple<std::wstring, int>> yellow_letters; // char, pos
+		//std::vector<std::tuple<std::wstring, int>> good_letters; // char, pos
+		std::map<std::wstring, int> good_letters; // char, pos
+		std::map<std::wstring, unsigned char> yellow_letters; // char, pos
 		template <typename T> 
 		void unique_elements(std::vector<T>& vec);
 	public:

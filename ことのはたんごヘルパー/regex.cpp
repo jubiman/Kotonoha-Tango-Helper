@@ -6,8 +6,6 @@ jubiman::Regex::Regex() {
 }
 
 void jubiman::Regex::init() {
-	//jubiman::Regex::query = std::wstring(std::allocator<wchar_t>());
-
 	jubiman::Regex::hiragana_katakana_x.assign(L"/[ぁ-ゖァ-ヺ\wx]/g");
 	jubiman::Regex::all.assign(L"/[一-龯]/g");
 	jubiman::Regex::non_japanese.assign(L"/[^ぁ-ゖァ-ヺ]/g");
@@ -65,8 +63,7 @@ bool jubiman::Regex::isValidInput(std::wstring input) {
 }
 
 template <typename T>
-void jubiman::Regex::unique_elements(std::vector<T>& vec)
-{
+void jubiman::Regex::unique_elements(std::vector<T>& vec) {
 	std::map<T, int> m;
 
 	for (auto p = vec.begin(); p != vec.end(); ++p)
@@ -75,7 +72,6 @@ void jubiman::Regex::unique_elements(std::vector<T>& vec)
 	vec.clear();
 
 	for (auto p = m.begin(); p != m.end(); ++p) vec.push_back(p->first);
-		//if (p->second == 1) vec.push_back(p->first);
 }
 
 
@@ -198,11 +194,9 @@ std::wstring jubiman::Regex::find_best_word() {
 		if (m.ready() && m.empty()) continue;
 		
 		for (wchar_t l : m.suffix().str()) {
-			for (size_t i = 0; i < freq.size(); ++i) {
-				if (l == std::get<0>(freq[i])) {
+			for (size_t i = 0; i < freq.size(); ++i)
+				if (l == std::get<0>(freq[i]))
 					std::get<1>(freq[i])++; goto cnt;
-				}
-			}
 			freq.push_back(std::tuple<wchar_t, int>(l, 1));
 		cnt:;
 		}
@@ -262,7 +256,7 @@ std::wstring jubiman::Regex::find_best_word() {
 			}
 
 			// Push back the result
-			good_words.push_back(Word(line, score));
+			good_words.push_back(std::tuple<std::wstring, double>(line, score));
 
 			//std::wcout << L"Found a match: " << line << std::endl;
 			//matches++;
@@ -281,17 +275,17 @@ std::wstring jubiman::Regex::find_best_word() {
 	good_words.erase(end, good_words.end());*/
 
 	// Sort words by score (ascending)
-	std::sort(good_words.begin(), good_words.end(), [](const Word& a, const Word& b) -> bool {
-		return (a.score > b.score);
+	std::sort(good_words.begin(), good_words.end(), [](const std::tuple<std::wstring, double>& a, const std::tuple<std::wstring, double>& b) -> bool {
+		return (std::get<1>(a) > std::get<1>(b));
 	});
 
 	std::wofstream wof2(L"output/output3.txt");
 	wof2.imbue(std::locale(std::locale::empty(), new std::codecvt_utf8<wchar_t, 0x10ffff, std::generate_header>));
-	if (wof2.is_open()) for (auto b : good_words) wof2 << b.word << L" " << b.score << std::endl;
+	if (wof2.is_open()) for (auto b : good_words) wof2 << std::get<0>(b) << L" " << std::get<1>(b) << std::endl;
 	wof2.close();
 
 
-	return good_words[0].word;
+	return std::get<0>(good_words[0]);
 }
 
 void jubiman::Regex::add_used_letters(std::wstring letters) {
@@ -314,7 +308,8 @@ void jubiman::Regex::add_good_letters(std::wstring gl) {
 	}
 	strtuples.push_back(gl.substr(0, pos));
 	for (std::wstring strtup : strtuples) {
-		good_letters.push_back(std::tuple<std::wstring, int>(std::wstring(1, strtup.at(1)), _wtoi(strtup.substr(4, 1).c_str())));
+		good_letters[std::wstring(1, strtup.at(1))] = _wtoi(strtup.substr(4, 1).c_str());
+		yellow_letters.erase(std::wstring(1, strtup.at(1)));
 	}
 }
 
@@ -329,7 +324,7 @@ void jubiman::Regex::add_yellow_letters(std::wstring yl) {
 	}
 	strtuples.push_back(yl.substr(0, pos));
 	for (std::wstring strtup : strtuples) {
-		yellow_letters.push_back(std::tuple<std::wstring, int>(std::wstring(1, strtup.at(1)), _wtoi(strtup.substr(4, 1).c_str())));
+		yellow_letters[std::wstring(1, strtup.at(1))] = yellow_letters[std::wstring(1, strtup.at(1))] | (int)pow(2, _wtoi(strtup.substr(4, 1).c_str()));
 	}
 }
 
@@ -342,34 +337,28 @@ int jubiman::Regex::set_query_and_search() {
 		tmp.replace(std::get<1>(g), 1, std::get<0>(g));
 
 	// Make not or char letter regex
-	for (size_t i = 0; i < 5; ++i)
-		if (tmp.at(i) == L'.')
-			for (std::tuple<std::wstring, int> y : yellow_letters)
-				std::get<1>(y) != i ? arr[i] += std::get<0>(y) : notArr[i] += std::get<0>(y);
+	for (auto const& x : yellow_letters)
+		for (unsigned char j = 0; j < 5; ++j)
+			tmp.at(j) == L'.' ? ((x.second != ((int)pow(2, j) | x.second)) ? ((arr[j].find(x.first) == std::wstring::npos) ? arr[j] += x.first : L"") : ((notArr[j].find(x.first) == std::wstring::npos) ? notArr[j] += x.first : L"")) : L"";
 
 	for (unsigned int i = 0, j = 0; i < 5; ++i, ++j)
 		if (arr[i] != L"") {
+		//if (tmp.at(j) == L'.') {
 			if (arr[i].length() > 1) {
 				tmp.replace(j, 1, L"([^" + bad_letters + L"]|[" + arr[i] + L"])");
 				j += std::wstring(L"([^" + bad_letters + L"]|[" + arr[i] + L"])").length()-1;
 			}
-			else {
+			else if (arr[i].length() == 1) {
 				tmp.replace(j, 1, L"([^" + bad_letters + L"]|" + arr[i] + L")");
 				j += std::wstring(L"([^" + bad_letters + L"]|" + arr[i] + L")").length()-1;
 			}
 		}
 
-	/*for (size_t i = 0, j = 0; i < tmp.length(); ++i, ++j)
-		if (tmp.at(i) == L'.') {
-			tmp.replace(i, 1, L"[^" + bad_letters + notArr[j] + L"]");
-			i += std::wstring(L"[^" + bad_letters + notArr[j] + L"]").length()-1;
-		}*/
-	size_t pos = 0, i = 0, j;
+	size_t pos = 0, i, j;
 	while (tmp.at(0) == L'.' || (pos = tmp.find(L".", pos)) != std::wstring::npos) {
-		j = 0;
-		while ((i = tmp.find(L')', i + 1)) != std::wstring::npos && i < pos) {
-			++j;
-		}
+		j = 0; i = 0;
+		while ((i = tmp.find(L']', i + 1)) != std::wstring::npos && i < pos) ++j;
+		if (j > good_letters.size()) j += good_letters.size();
 		tmp.replace(pos, 1, L"[^" + bad_letters + notArr[j] + L"]");
 		pos += std::wstring(L"[^" + bad_letters + notArr[j] + L"]").length() - 1;
 	}
