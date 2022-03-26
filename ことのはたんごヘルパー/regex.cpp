@@ -308,7 +308,7 @@ void jubiman::Regex::add_good_letters(std::wstring gl) {
 	}
 	strtuples.push_back(gl.substr(0, pos));
 	for (std::wstring strtup : strtuples) {
-		good_letters[std::wstring(1, strtup.at(1))] = _wtoi(strtup.substr(4, 1).c_str());
+		good_letters[std::wstring(1, strtup.at(1))] = good_letters[std::wstring(1, strtup.at(1))] | (int)pow(2, _wtoi(strtup.substr(4, 1).c_str()));
 		yellow_letters.erase(std::wstring(1, strtup.at(1)));
 	}
 }
@@ -320,7 +320,7 @@ void jubiman::Regex::add_yellow_letters(std::wstring yl) {
 	size_t pos = 5;
 	while ((pos = yl.find(L") (")) != std::wstring::npos) {
 		strtuples.push_back(yl.substr(0, pos + 1));
-		yl.erase(0, pos + 3);
+		yl.erase(0, pos + 2);
 	}
 	strtuples.push_back(yl.substr(0, pos));
 	for (std::wstring strtup : strtuples) {
@@ -333,8 +333,18 @@ int jubiman::Regex::set_query_and_search() {
 	std::wstring arr[5] = {}, notArr[5] = {};
 
 	// Replace known letters
-	for (std::tuple<std::wstring, int> g : good_letters)
-		tmp.replace(std::get<1>(g), 1, std::get<0>(g));
+	for (const auto& g : good_letters)
+		for (unsigned char i = 0; i < 5; ++i)
+			g.second == (g.second | (int)pow(2, i)) ? tmp.replace(i, 1, g.first) : L"";
+
+	// g.second = 0b10010
+	// g.second | (int)pow(2, i) -> ans
+	// 0b10010 | 0b00001 -> 0b10011 false pos 2^0
+	// 0b10010 | 0b00010 -> 0b10010 true  pos 2^1
+	// 0b10010 | 0b00100 -> 0b10110 false pos 2^2
+	// 0b10010 | 0b01000 -> 0b11010 false pos 2^3
+	// 0b10010 | 0b10000 -> 0b10010 true  pos 2^4
+	//
 
 	// Make not or char letter regex
 	for (auto const& x : yellow_letters)
@@ -370,9 +380,9 @@ int jubiman::Regex::set_query_and_search() {
 }
 
 int jubiman::Regex::check_yellow_letters() {
-	for (std::tuple<std::wstring, int> t : yellow_letters)
+	for (const auto& t : yellow_letters)
 		for (size_t i = 0; i < results.size(); ++i)
-			if (results[i].find(std::get<0>(t)) == std::wstring::npos) {
+			if (results[i].find(t.first) == std::wstring::npos) {
 				results.erase(results.begin() + i);
 				--i;
 			}
