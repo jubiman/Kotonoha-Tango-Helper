@@ -355,12 +355,12 @@ int jubiman::Regex::set_query_and_search() {
 		if (arr[i] != L"") {
 		//if (tmp.at(j) == L'.') {
 			if (arr[i].length() > 1) {
-				tmp.replace(j, 1, L"([^" + bad_letters + L"]|[" + arr[i] + L"])");
-				j += std::wstring(L"([^" + bad_letters + L"]|[" + arr[i] + L"])").length()-1;
+				tmp.replace(j, 1, L"([^" + bad_letters + notArr[i] + L"]|[" + arr[i] + L"])");
+				j += std::wstring(L"([^" + bad_letters + notArr[i] + L"]|[" + arr[i] + L"])").length()-1;
 			}
 			else if (arr[i].length() == 1) {
-				tmp.replace(j, 1, L"([^" + bad_letters + L"]|" + arr[i] + L")");
-				j += std::wstring(L"([^" + bad_letters + L"]|" + arr[i] + L")").length()-1;
+				tmp.replace(j, 1, L"([^" + bad_letters + notArr[i] + L"]|" + arr[i] + L")");
+				j += std::wstring(L"([^" + bad_letters + notArr[i] + L"]|" + arr[i] + L")").length()-1;
 			}
 		}
 
