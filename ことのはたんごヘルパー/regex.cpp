@@ -72,7 +72,7 @@ int jubiman::Regex::search() {
 
 	// Setup file reader
 	std::wstring line;
-	std::wifstream fs(L"./data/A_data_new.csv", std::ios::in);
+	std::wifstream fs(L"data/data_sorted.csv", std::ios::in);
 	fs.imbue(std::locale(std::locale::empty(), new std::codecvt_utf8<wchar_t, 0x10ffff, std::consume_header>));
 
 	// Setup regex matches
@@ -133,7 +133,7 @@ std::wstring jubiman::Regex::find_best_word() {
 
 	// Setup file reader
 	std::wstring line;
-	//std::wifstream fs(L"./data/A_data_new.csv", std::ios::in);
+	//std::wifstream fs(L"data/data_sorted.csv", std::ios::in);
 	std::wifstream fs(L"./output/possible words.txt", std::ios::in);
 	fs.imbue(std::locale(std::locale::empty(), new std::codecvt_utf8<wchar_t, 0x10ffff, std::consume_header>));
 
