@@ -33,7 +33,7 @@ int main()
 
     bool solved = false;
     while (!solved) {
-         std::cout << "Bad letters (wstring):" << std::endl;
+        std::cout << "Bad letters (wstring):" << std::endl;
         std::wcin >> bl;
         reg.add_bad_letters(bl);
         std::cout << "Good letters L\"(wchar_t, int)\" seperated by a space with the position being 0-based index:" << std::endl;
@@ -49,12 +49,14 @@ int main()
         if (m == 1) {
             std::wcout << L"Answer: " << *reg.get_matches().begin() << std::endl;
             solved = true;
+            break;
         }
         // Write matches to file for easier read/search
         std::wofstream wof2(L"output/possible words.txt");
         wof2.imbue(std::locale(std::locale::empty(), new std::codecvt_utf8<wchar_t, 0x10ffff, std::generate_header>));
         if (wof2.is_open()) for (std::wstring match : reg.get_matches()) wof2 << match << std::endl;
         wof2.close();
-        std::wcout << L"Best word: " << reg.find_best_word() << std::endl;
+        std::wcout << L"Best word: " << (reg.good_letters_size == 4 ? reg.find_best_word_last() : reg.find_best_word()) << std::endl;
+        reg.skim_words();
     }
 }
