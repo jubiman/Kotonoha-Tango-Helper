@@ -6,6 +6,16 @@
 # Output files
 output/
 
+# Projects
+csv file formatter/
+setup/
+
+# Visual Studio files
+*.sln
+*.vcproj
+*.vcxproj
+*.filters
+
 # User-specific files
 *.rsuser
 *.suo
