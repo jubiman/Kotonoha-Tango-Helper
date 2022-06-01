@@ -242,6 +242,7 @@ std::wstring jubiman::Regex::find_best_word_last() {
 
 // Add bad letters
 void jubiman::Regex::add_bad_letters(std::wstring bl) {
+	if (bl.empty()) return;
 	bad_letters += bl;
 	std::set<char> chars;
 
@@ -307,21 +308,6 @@ void jubiman::Regex::add_yellow_letters(std::wstring yl) {
 		bad_pos_letters[std::wstring(1, strtup.at(1))] = yellow_letters[std::wstring(1, strtup.at(1))] | (1 << _wtoi(strtup.substr(4, 1).c_str()));
 		yellow_letters[std::wstring(1, strtup.at(1))] = yellow_letters[std::wstring(1, strtup.at(1))] | (1 << _wtoi(strtup.substr(4, 1).c_str()));
 	}
-}
-
-int jubiman::Regex::check_yellow_letters() {
-	for (const auto& t : yellow_letters)
-		for (auto it = results.begin(); it != results.end();)
-			if ((*it).find(t.first) == std::wstring::npos)
-				it = results.erase(it);
-			else ++it;
-
-	for (const auto& l : bad_pos_letters)
-		for (auto it = results.begin(); it != results.end(); )
-			if ((1 << (*it).find(l.first)) == ((1 << ((*it).find(l.first))) | l.second))
-				it = results.erase(it);
-			else ++it;
-	return results.size();
 }
 
 void jubiman::Regex::skim_words() {

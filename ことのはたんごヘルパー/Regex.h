@@ -37,7 +37,6 @@ namespace jubiman {
 		void add_duplicate_gray_letters(std::wstring);
 		void add_good_letters(std::wstring);
 		void add_yellow_letters(std::wstring);
-		int check_yellow_letters();
 		void skim_words();
 	};
 }
