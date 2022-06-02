@@ -6,14 +6,19 @@ jubiman::Regex::Regex() {
 	
 	// Load words
 	std::wstring line;
+#ifdef _WIN32
 	std::wifstream fs(L"data/data_sorted.csv", std::ios::in);
 	fs.imbue(std::locale(std::locale::empty(), new std::codecvt_utf8<wchar_t, 0x10ffff, std::consume_header>));
+#else
+	std::wifstream fs("data/data_sorted.csv", std::ios::in);
+	fs.imbue(std::locale(std::locale("C.UTF-8"), new std::codecvt_utf8<wchar_t, 0x10ffff, std::consume_header>));
+#endif
 	if (fs.is_open()) while (std::getline(fs, line)) words.insert(line); fs.close();
 	std::cout << "Loaded " << words.size() << " words." << std::endl;
 	skimmed_words = words;
 }
 
-std::vector<size_t> findAll(std::wstring data, std::wstring toSearch)
+std::vector<size_t> findAll(const std::wstring& data, const std::wstring& toSearch)
 {
 	std::vector<size_t> vec;
 	// Get the first occurrence
@@ -34,7 +39,7 @@ std::vector<size_t> findAll(std::wstring data, std::wstring toSearch)
  *
  * @returns The amount of matches.
  */
-int jubiman::Regex::search() {
+size_t jubiman::Regex::search() {
 	// Clear the results map
 	results.clear();
 
@@ -60,16 +65,16 @@ int jubiman::Regex::search() {
 				count++;
 				num >>= 1;	// bitwise rightshift 
 			}
-			for (auto it = vec.begin(); it != vec.end(); ++it)
-				if (std::wstring(1, word.at(*it)) != gl.first) goto next;
+			for (unsigned char & it : vec)
+				if (std::wstring(1, word.at(it)) != gl.first) goto next;
 		}
 
 		// Skip if it has a yellow letter in a known position
 		for (const auto& yl : yellow_letters) {
 			if (word.find(yl.first) == std::wstring::npos) goto next;
 			std::vector<size_t> vec = findAll(word, yl.first);
-			for (std::vector<size_t>::iterator it = vec.begin(); it != vec.end(); ++it)
-				if (yl.second & 1 << *it) goto next;
+			for (unsigned long & it : vec)
+				if (yl.second & 1 << it) goto next;
 		}
 
 		// Skip if it has a gray letter in known bad position
@@ -84,8 +89,8 @@ int jubiman::Regex::search() {
 				count++;
 				num >>= 1;	// bitwise rightshift 
 			}
-			for (auto it = vec.begin(); it != vec.end(); ++it)
-				if (std::wstring(1, word.at(*it)) == bl.first) goto next;
+			for (unsigned char & it : vec)
+				if (std::wstring(1, word.at(it)) == bl.first) goto next;
 		}		
 
 		results.insert(word);
@@ -112,9 +117,14 @@ std::wstring jubiman::Regex::find_best_word() {
 				if (yellow_letters.count(std::wstring(1, word.at(j))) == 0 || (*yellow_letters.find(std::wstring(1, word.at(j)))).second != ((*yellow_letters.find(std::wstring(1, word.at(j)))).second | i))
 					freq[word.at(j)]++;
 
+#ifdef _WIN32
 	std::wofstream wof(L"output/frequencies.txt");
 	wof.imbue(std::locale(std::locale::empty(), new std::codecvt_utf8<wchar_t, 0x10ffff, std::generate_header>));
-	if (wof.is_open()) for (const auto &b : freq) wof << b.first << L" " << b.second << std::endl;
+#else
+	std::wofstream wof("output/frequencies.txt", std::ios::app);
+	wof.imbue(std::locale(std::locale("C.UTF-8"), new std::codecvt_utf8<wchar_t, 0x10ffff, std::generate_header>));
+#endif
+	if (wof.is_open()) for (const auto &b : freq) wof << b.first << L" " << b.second << "\n";
 	wof.close();
 
 	good_words.clear();
@@ -135,9 +145,8 @@ std::wstring jubiman::Regex::find_best_word() {
 
 
 		// Calculate score
-		int score = 0;
-		std::wstring had = L"";
-
+		size_t score = 0;
+		std::wstring had;
 		for (wchar_t l : word) {
 			if (good_letters.count(std::wstring(1, l)) || had.find(l) != std::wstring::npos) continue;
 			score += freq[l] * 4;
@@ -160,17 +169,23 @@ std::wstring jubiman::Regex::find_best_word() {
 		return (a.second > b.second);
 	});
 
+#ifdef _WIN32
 	std::wofstream wof2(L"output/good words.txt");
 	wof2.imbue(std::locale(std::locale::empty(), new std::codecvt_utf8<wchar_t, 0x10ffff, std::generate_header>));
-	if (wof2.is_open()) for (const auto& b : v) wof2 << b.first << L" " << b.second << std::endl;
+#else
+	std::wofstream wof2("output/good words.txt", std::ios::app);
+	wof2.imbue(std::locale(std::locale("C.UTF-8"), new std::codecvt_utf8<wchar_t, 0x10ffff, std::generate_header>));
+#endif
+	if (wof2.is_open()) for (const auto& b : v) wof2 << b.first << L" " << b.second << "\n";
 	wof2.close();
 
-	return v.size() > 0 ? (*v.begin()).first : L"No good word found";
+	return !v.empty() ? (*v.begin()).first : L"No good word found";
 }
 
 std::wstring jubiman::Regex::find_best_word_last() {
 	std::cout << "Finding best word..." << std::endl;
 
+	// Funny business
 	unsigned char pos = 0b11100000;
 	unsigned char j = 0;
 	for (const auto& l : good_letters)
@@ -202,9 +217,8 @@ std::wstring jubiman::Regex::find_best_word_last() {
 
 
 		// Calculate score
-		int score = 0;
-		std::wstring had = L"";
-
+		size_t score = 0;
+		std::wstring had;
 		for (const auto& l : word) {
 			if (had.find(l) != std::wstring::npos) continue;
 			//if (good_letters.count(std::wstring(1, l)) || had.find(l) != std::wstring::npos) continue;
@@ -233,16 +247,21 @@ std::wstring jubiman::Regex::find_best_word_last() {
 		return (a.second > b.second);
 	});
 
+#ifdef _WIN32
 	std::wofstream wof2(L"output/good words.txt");
 	wof2.imbue(std::locale(std::locale::empty(), new std::codecvt_utf8<wchar_t, 0x10ffff, std::generate_header>));
-	if (wof2.is_open()) for (const auto& b : v) wof2 << b.first << L" " << b.second << std::endl;
+#else
+	std::wofstream wof2("output/good words.txt", std::ios::app);
+	wof2.imbue(std::locale(std::locale("C.UTF-8"), new std::codecvt_utf8<wchar_t, 0x10ffff, std::generate_header>));
+#endif
+	if (wof2.is_open()) for (const auto& b : v) wof2 << b.first << L" " << b.second << "\n";
 	wof2.close();
 
-	return v.size() > 0 ? (*v.begin()).first : L"No good word found";
+	return !v.empty() ? (*v.begin()).first : L"No good word found";
 }
 
 // Add bad letters
-void jubiman::Regex::add_bad_letters(std::wstring bl) {
+void jubiman::Regex::add_bad_letters(const std::wstring& bl) {
 	if (bl.empty()) return;
 	bad_letters += bl;
 	std::set<char> chars;
@@ -267,14 +286,18 @@ void jubiman::Regex::add_bad_letters(std::wstring bl) {
 void jubiman::Regex::add_duplicate_gray_letters(std::wstring dgl) {
 	if (dgl.empty()) return;
 	std::vector<std::wstring> strtuples;
-	size_t pos = 5;
+	size_t pos;
 	while ((pos = dgl.find(L") (")) != std::wstring::npos) {
 		strtuples.push_back(dgl.substr(0, pos + 1));
 		dgl.erase(0, pos + 2);
 	}
 	strtuples.push_back(dgl.substr(0, pos));
 	for (std::wstring strtup : strtuples) {
+#ifdef _WIN32
 		bad_pos_letters[std::wstring(1, strtup.at(1))] |= (1 << _wtoi(strtup.substr(4, 1).c_str()));
+#else
+		bad_pos_letters[std::wstring(1, strtup.at(1))] |= (1 << wcstol(strtup.substr(4, 1).c_str(), nullptr, 10));
+#endif
 	}
 }
 
@@ -282,14 +305,18 @@ void jubiman::Regex::add_duplicate_gray_letters(std::wstring dgl) {
 void jubiman::Regex::add_good_letters(std::wstring gl) {
 	if (gl.empty()) return;
 	std::vector<std::wstring> strtuples;
-	size_t pos = 5;
+	size_t pos;
 	while ((pos = gl.find(std::wstring(L") ("))) != std::wstring::npos) {
 		strtuples.push_back(gl.substr(0, pos + 1));
 		gl.erase(0, pos + 2);
 	}
 	strtuples.push_back(gl.substr(0, pos));
 	for (std::wstring strtup : strtuples) {
+#ifdef _WIN32
 		good_letters[std::wstring(1, strtup.at(1))] = good_letters[std::wstring(1, strtup.at(1))] | (1 << _wtoi(strtup.substr(4, 1).c_str()));
+#else
+		good_letters[std::wstring(1, strtup.at(1))] |= (1 << wcstol(strtup.substr(4, 1).c_str(), nullptr, 10));
+#endif
 		yellow_letters.erase(std::wstring(1, strtup.at(1)));
 		++good_letters_size;
 	}
@@ -299,15 +326,20 @@ void jubiman::Regex::add_good_letters(std::wstring gl) {
 void jubiman::Regex::add_yellow_letters(std::wstring yl) {
 	if (yl.empty()) return;
 	std::vector<std::wstring> strtuples;
-	size_t pos = 5;
+	size_t pos;
 	while ((pos = yl.find(L") (")) != std::wstring::npos) {
 		strtuples.push_back(yl.substr(0, pos + 1));
 		yl.erase(0, pos + 2);
 	}
 	strtuples.push_back(yl.substr(0, pos));
 	for (std::wstring strtup : strtuples) {
+#ifdef _WIN32
 		bad_pos_letters[std::wstring(1, strtup.at(1))] = yellow_letters[std::wstring(1, strtup.at(1))] | (1 << _wtoi(strtup.substr(4, 1).c_str()));
 		yellow_letters[std::wstring(1, strtup.at(1))] = yellow_letters[std::wstring(1, strtup.at(1))] | (1 << _wtoi(strtup.substr(4, 1).c_str()));
+#else
+		bad_pos_letters[std::wstring(1, strtup.at(1))] |= (1 << wcstol(strtup.substr(4, 1).c_str(), nullptr, 10));
+		yellow_letters[std::wstring(1, strtup.at(1))] |= (1 << wcstol(strtup.substr(4, 1).c_str(), nullptr, 10));
+#endif
 	}
 }
 
