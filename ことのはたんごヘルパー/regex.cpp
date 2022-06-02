@@ -9,6 +9,7 @@ jubiman::Regex::Regex() {
 	std::wifstream fs(L"data/data_sorted.csv", std::ios::in);
 	fs.imbue(std::locale(std::locale::empty(), new std::codecvt_utf8<wchar_t, 0x10ffff, std::consume_header>));
 	if (fs.is_open()) while (std::getline(fs, line)) words.insert(line); fs.close();
+	std::cout << "Loaded " << words.size() << " words." << std::endl;
 	skimmed_words = words;
 }
 
@@ -63,6 +64,14 @@ int jubiman::Regex::search() {
 				if (std::wstring(1, word.at(*it)) != gl.first) goto next;
 		}
 
+		// Skip if it has a yellow letter in a known position
+		for (const auto& yl : yellow_letters) {
+			if (word.find(yl.first) == std::wstring::npos) goto next;
+			std::vector<size_t> vec = findAll(word, yl.first);
+			for (std::vector<size_t>::iterator it = vec.begin(); it != vec.end(); ++it)
+				if (yl.second & 1 << *it) goto next;
+		}
+
 		// Skip if it has a gray letter in known bad position
 		for (const auto& bl : bad_pos_letters) {
 			// Get the positions of the bad letter
@@ -76,22 +85,14 @@ int jubiman::Regex::search() {
 				num >>= 1;	// bitwise rightshift 
 			}
 			for (auto it = vec.begin(); it != vec.end(); ++it)
-				if (std::wstring(1, word.at(*it)) != bl.first) goto next;
-		}
-
-		// Skip if it has a yellow letter in a known position
-		for (const auto& yl : yellow_letters) {
-			if (word.find(yl.first) == std::wstring::npos) goto next;
-			std::vector<size_t> vec = findAll(word, yl.first);
-			for (std::vector<size_t>::iterator it = vec.begin(); it != vec.end(); ++it)
-				if (yl.second & 1 << *it) goto next;
-		}
+				if (std::wstring(1, word.at(*it)) == bl.first) goto next;
+		}		
 
 		results.insert(word);
 	next:
 		continue;
 	}
-	std::cout << "Checked " << checked << " lines." << std::endl;
+	std::cout << "Checked " << checked << " words." << std::endl;
 
 	return results.size();
 }
