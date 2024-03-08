@@ -23,6 +23,8 @@ namespace jubiman {
 
 		void calculate_best_word();
 
+		void lock_colors(ftxui::ColoredText *&pText);
+
 	private:
 		ftxui::ColoredText *currentText;
 

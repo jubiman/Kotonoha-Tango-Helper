@@ -26,8 +26,10 @@ namespace ftxui {
 		[[nodiscard]] std::wstring getWideCharacter() const;
 		[[nodiscard]] const Color &getFgColor() const { return fg_color_; }
 		[[nodiscard]] const Color &getBgColor() const { return bg_color_; }
-		void setBgColor(ftxui::Color color) { bg_color_ = color; }
-		void setFgColor(ftxui::Color color) { fg_color_ = color; }
+		void setBgColor(ftxui::Color color) { if(!is_locked_) bg_color_ = color; }
+		void setFgColor(ftxui::Color color) { if(!is_locked_) fg_color_ = color; }
+		void lock() { is_locked_ = true; }
+		void unlock() { is_locked_ = false; }
 		bool operator!= (const ColoredChar& other) const {
 			return character_ != other.character_;
 		}
@@ -49,6 +51,7 @@ namespace ftxui {
 		std::string character_;
 		Color fg_color_;
 		Color bg_color_;
+		bool is_locked_ = false;
 	};
 
 	class ColoredText : public Node {
@@ -81,6 +84,10 @@ namespace ftxui {
 		[[nodiscard]] size_t length() const { size_t i = 0; for (auto& c : characters_) { if (c != filler_char) ++i; } return i; }
 
 		std::string getCharacters();
+
+		void lockColor(size_t pos, Color color);
+
+		std::wstring getWideCharacters();
 
 	private:
 		std::vector<ColoredChar> characters_;

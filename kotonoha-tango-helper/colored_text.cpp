@@ -255,15 +255,49 @@ void ftxui::ColoredText::inputMode() {
 void ftxui::ColoredText::reset() {
 	for (auto& c : characters_) {
 		c = filler_char;
+		c.unlock();
+		c.setBgColor(ftxui::Color::Default);
+		c.setFgColor(ftxui::Color::Default);
 	}
 	cursor_x_ = 0;
 	max_cursor_x_ = 0;
 }
 
+/**
+ * Get the characters of the text
+ * @return The characters
+ */
 std::string ftxui::ColoredText::getCharacters() {
 	std::string result;
 	for (auto& c : characters_) {
 		result += c.getCharacter();
+	}
+	return result;
+}
+
+/**
+ * Lock the color of the character at the given position
+ * @param pos The position of the character
+ * @param color The color to lock
+ */
+void ftxui::ColoredText::lockColor(size_t pos, Color color) {
+	characters_[pos].setBgColor(color);
+	if (color == ftxui::Color::Default) {
+		characters_[pos].setFgColor(ftxui::Color::Default);
+	} else {
+		characters_[pos].setFgColor(ftxui::Color::White);
+	}
+	characters_[pos].lock();
+}
+
+/**
+ * Get the wide characters of the text
+ * @return The wide characters
+ */
+std::wstring ftxui::ColoredText::getWideCharacters() {
+	std::wstring result;
+	for (auto& c : characters_) {
+		result += c.getWideCharacter();
 	}
 	return result;
 }

@@ -36,7 +36,8 @@ bool handleInput(const ftxui::Event& event,
 				 bool& modal_open,
 				 bool& settings_modal_open,
 				 std::string& debug_output,
-				 ftxui::ScreenInteractive& screen
+				 ftxui::ScreenInteractive& screen,
+				 jubiman::WordSearch& search
 				 );
 bool handleColorEdit(const ftxui::Event& event,
 					 std::string& input_text,
@@ -129,7 +130,7 @@ void renderTUI() {
 	}) | CatchEvent([&](const Event& event) {
 		switch (mode) {
 			case input:
-				return handleInput(event, input_text, c_input_text, input_components, current_input, mode, modal_open, settings_modal_open, debug_output, screen);
+				return handleInput(event, input_text, c_input_text, input_components, current_input, mode, modal_open, settings_modal_open, debug_output, screen, search);
 			case color_edit:
 				return handleColorEdit(event, input_text, c_input_text, input_components, current_input, mode, modal_open, search);
 		}
@@ -192,7 +193,6 @@ void renderTUI() {
 		Button("Confirm", [&] {
 			modal_open = false;
 			mode = input;
-			// TODO: actually run the search algorithm
 			// TODO: first have to convert the colorings to the regex thingy. might want to rewrite that a bit as well
 
 			search.update_colors(c_input_text);
@@ -202,8 +202,7 @@ void renderTUI() {
 
 			// move to the next input
 			int next_input = ++current_input;
-			if (next_input == 10) {
-				// TODO: add some kind of end screen or smth
+			if (next_input == 10 || matches <= 1) {
 				restart_modal_open = true;
 				return;
 			}
@@ -347,7 +346,8 @@ bool handleInput(const ftxui::Event& event,
 				 bool& modal_open,
 				 bool& settings_modal_open,
 				 std::string& debug_output,
-				 ftxui::ScreenInteractive& screen
+				 ftxui::ScreenInteractive& screen,
+				 jubiman::WordSearch& search
 				 ) {
 	using namespace ftxui;
 	if (event.is_character()) {
@@ -376,6 +376,9 @@ bool handleInput(const ftxui::Event& event,
 		return true;
 	} else if (event == Event::Return) {
 		if (c_input_text->length() >= 5) {
+			// Color known letters and lock those colors
+			search.lock_colors(c_input_text);
+
 			mode = color_edit;
 			c_input_text->colorMode();
 		}
@@ -385,6 +388,10 @@ bool handleInput(const ftxui::Event& event,
 	} else if (event == Event::F2) {
 		// Open the settings modal
 		settings_modal_open = true;
+		return true;
+	} else if (event == Event::F5) {
+		// reset the board
+		reset_board(input_components, c_input_text, mode, current_input, search);
 		return true;
 	}
 	return false;
@@ -420,6 +427,10 @@ bool handleColorEdit(const ftxui::Event& event,
 	} else if (event == Event::ArrowDown) {
 		// rotate the color of the character at the cursor down
 		c_input_text->rotateColor(false);
+		return true;
+	} else if (event == Event::F5) {
+		// go back to input mode
+		mode = input;
 		return true;
 	}
 	return false;

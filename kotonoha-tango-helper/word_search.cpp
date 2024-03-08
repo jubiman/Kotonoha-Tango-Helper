@@ -180,3 +180,29 @@ void jubiman::WordSearch::calculate_best_word() {
 	// Convert the best word to a string
 	best_word = std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t>{}.to_bytes(wbest_word);
 }
+
+void jubiman::WordSearch::lock_colors(ftxui::ColoredText *&pText) {
+	for (const auto& [key, value] : good_letters) {
+		auto pos = unpack_flags(value);
+		for (const auto& p : pos) {
+			if (pText->getWideCharacters().at(p) == key.at(0)) {
+				pText->lockColor(p, ftxui::Color::Green);
+			}
+		}
+	}
+	for (const auto& [key, value] : yellow_letters) {
+		auto pos = unpack_flags(value);
+		for (const auto& p : pos) {
+			if (pText->getWideCharacters().at(p) == key.at(0)) {
+				pText->lockColor(p, ftxui::Color::Yellow);
+			}
+		}
+	}
+	for (const auto& letter : bad_letters) {
+		auto pos = pText->getWideCharacters().find(letter);
+		while (pos != std::wstring::npos) {
+			pText->lockColor(pos, ftxui::Color::Default);
+			pos = pText->getWideCharacters().find(letter, pos + 1);
+		}
+	}
+}
