@@ -35,6 +35,7 @@ bool handleInput(const ftxui::Event& event,
 				 int& current_input, Mode& mode,
 				 bool& modal_open,
 				 bool& settings_modal_open,
+                 bool& clipboard_notification_open,
 				 std::string& debug_output,
 				 ftxui::ScreenInteractive& screen,
 				 jubiman::WordSearch& search
@@ -112,6 +113,7 @@ void renderTUI() {
 	Mode mode = input;
 	bool modal_open = false;
 	bool settings_modal_open = false;
+    bool clipboard_notification_open = false;
 	Component text_input = Input(&input_text, {
 			.on_change = [&] {
 				// translate all the characters to katakana
@@ -130,7 +132,7 @@ void renderTUI() {
 	}) | CatchEvent([&](const Event& event) {
 		switch (mode) {
 			case input:
-				return handleInput(event, input_text, c_input_text, input_components, current_input, mode, modal_open, settings_modal_open, debug_output, screen, search);
+				return handleInput(event, input_text, c_input_text, input_components, current_input, mode, modal_open, settings_modal_open, clipboard_notification_open, debug_output, screen, search);
 			case color_edit:
 				return handleColorEdit(event, input_text, c_input_text, input_components, current_input, mode, modal_open, search);
 		}
@@ -265,6 +267,23 @@ void renderTUI() {
 			},
 	});
 
+    // CLIPBOARD NOTIFICATION
+    auto clipboard_notification = Container::Vertical({
+        Button(translation.translate("close"), [&] {
+            clipboard_notification_open = false;
+        }, {
+                .transform = [](const EntryState& s) {
+                    auto element = text(s.label) | color(ftxui::Color::Green) | border | center
+                            | size(WIDTH, GREATER_THAN, 15) | size(HEIGHT, LESS_THAN, 5);
+                    if (s.active) {
+                        element |= bold;
+                    }
+                    return element;
+                },
+        }) | size(WIDTH, GREATER_THAN, 15) | size(HEIGHT, LESS_THAN, 5),
+    });
+
+
 	confirm_modal |= Renderer([&](Element inner) {
 		return vbox({
 							text("Are you sure you want to submit?") | color(Color::Red) | center,
@@ -309,7 +328,19 @@ void renderTUI() {
 			   | border
 			   | center;
 	});
+    clipboard_notification |= Renderer([&](Element inner) {
+        return vbox({
+            text(translation.translate("copied_to_clipboard")) | center,
+            separator(),
+            std::move(inner),
+        })
+        | size(WIDTH, GREATER_THAN, 15)
+        | size(HEIGHT, GREATER_THAN, 5)
+        | border
+        | center;
+    });
 
+    renderer |= Modal(clipboard_notification, &clipboard_notification_open);
 	renderer |= Modal(confirm_modal, &modal_open);
 	renderer |= Modal(restart_modal, &restart_modal_open);
 	renderer |= Modal(settings_menu, &settings_modal_open);
@@ -345,6 +376,7 @@ bool handleInput(const ftxui::Event& event,
 				 Mode& mode,
 				 bool& modal_open,
 				 bool& settings_modal_open,
+                 bool& clipboard_notification_open,
 				 std::string& debug_output,
 				 ftxui::ScreenInteractive& screen,
 				 jubiman::WordSearch& search
@@ -389,7 +421,16 @@ bool handleInput(const ftxui::Event& event,
 		// Open the settings modal
 		settings_modal_open = true;
 		return true;
-	} else if (event == Event::F5) {
+	} else if (event == Event::F3) {
+        // copy the best word to the clipboard
+        std::wstring best_word = converter.from_bytes(search.getBestWord());
+        std::wstring command = L"echo " + best_word + L" | clip";
+        system(converter.to_bytes(command).c_str());
+
+        // show a notification for 2 seconds using the modal TODO: (configurable)
+        clipboard_notification_open = true;
+        return true;
+    } else if (event == Event::F5) {
 		// reset the board
 		reset_board(input_components, c_input_text, mode, current_input, search);
 		return true;

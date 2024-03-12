@@ -23,8 +23,6 @@ include_directories(${ftxui_SOURCE_DIR}/include)
 
 add_executable(Kotonoha_Tango_Helper
         ${CONTENT_ROOT}/KotonohaTangoHelper.cpp
-        ${CONTENT_ROOT}/regex.cpp
-        ${CONTENT_ROOT}/regex.h
         kotonoha-tango-helper/colored_text.cpp
         kotonoha-tango-helper/colored_text.h
         kotonoha-tango-helper/constants.h

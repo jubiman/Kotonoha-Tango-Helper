@@ -21,6 +21,8 @@ void jubiman::WordSearch::init() {
 		fs.close();
 	}
 	skimmed_words = words;
+
+    calculate_best_word();
 }
 
 std::vector<uint8_t> unpack_flags(uint8_t flags) {
