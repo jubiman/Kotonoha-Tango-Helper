@@ -5,7 +5,6 @@
 #include "word_search.h"
 
 void jubiman::WordSearch::init() {
-	// TODO: read all the words from the file and store them in a vector
 	// Load words
 	std::wstring line;
 #ifdef _WIN32
@@ -203,27 +202,47 @@ void jubiman::WordSearch::calculate_best_word() {
 }
 
 void jubiman::WordSearch::lock_colors(ftxui::ColoredText *&pText) {
-	for (const auto& [key, value] : good_letters) {
-		auto pos = unpack_flags(value);
-		for (const auto& p : pos) {
-			if (pText->getWideCharacters().at(p) == key.at(0)) {
-				pText->lockColor(p, ftxui::Color::Green);
-			}
-		}
-	}
-	for (const auto& [key, value] : yellow_letters) {
-		auto pos = unpack_flags(value);
-		for (const auto& p : pos) {
-			if (pText->getWideCharacters().at(p) == key.at(0)) {
-				pText->lockColor(p, ftxui::Color::Yellow);
-			}
-		}
-	}
-	for (const auto& letter : bad_letters) {
-		auto pos = pText->getWideCharacters().find(letter);
-		while (pos != std::wstring::npos) {
-			pText->lockColor(pos, ftxui::Color::Default);
-			pos = pText->getWideCharacters().find(letter, pos + 1);
-		}
-	}
+    for (const auto& [key, value] : good_letters) {
+        auto pos = unpack_flags(value);
+        for (const auto& p : pos) {
+            if (pText->getWideCharacters().at(p) == key.at(0)) {
+                pText->lockColor(p, ftxui::Color::Green);
+            }
+        }
+    }
+    for (const auto& [key, value] : yellow_letters) {
+        auto pos = unpack_flags(value);
+        for (const auto& p : pos) {
+            if (pText->getWideCharacters().at(p) == key.at(0)) {
+                pText->lockColor(p, ftxui::Color::Yellow);
+            }
+        }
+    }
+
+    for (const auto& letter : bad_letters) {
+        auto pos = pText->getWideCharacters().find(letter);
+        while (pos != std::wstring::npos) {
+            pText->lockColor(pos, ftxui::Color::Default);
+            pos = pText->getWideCharacters().find(letter, pos + 1);
+        }
+    }
+
+    // New code: Check for good letters in the wrong position
+    for (const auto& [key, value] : good_letters) {
+        auto pos = pText->getWideCharacters().find(key.at(0));
+        while (pos != std::wstring::npos) {
+            // If the position is not in the good_letters map, color it yellow
+            if ((value & (1 << pos)) == 0) {
+                pText->lockColor(pos, ftxui::Color::Yellow);
+            }
+            pos = pText->getWideCharacters().find(key.at(0), pos + 1);
+        }
+    }
+}
+void jubiman::WordSearch::reset() {
+	bad_letters.clear();
+	good_letters.clear();
+	yellow_letters.clear();
+	skimmed_words = words;
+	calculate_best_word();
 }

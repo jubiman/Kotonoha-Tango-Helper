@@ -24,32 +24,40 @@ enum Mode {
 	color_edit
 };
 
+struct State {
+	std::string input_text;
+	jubiman::WordSearch search;
+	ftxui::ColoredText* c_input_text;
+};
+
+
 void renderTUI();
 void reset_board(std::vector<ftxui::Element>& input_components,
 				 ftxui::ColoredText*& c_input_text,
 				 Mode& mode,
 				 int& current_input,
-				 jubiman::WordSearch& search
+				 jubiman::WordSearch& search,
+				 std::stack<State>& previous_states
 				 );
 bool handleInput(const ftxui::Event& event,
 				 std::string& input_text,
 				 ftxui::ColoredText*& c_input_text,
 				 std::vector<ftxui::Element>& input_components,
-				 int& current_input, Mode& mode,
-				 bool& modal_open,
+				 int& current_input,
+				 Mode& mode,
 				 bool& settings_modal_open,
-                 bool& clipboard_notification_open,
+				 bool& clipboard_notification_open,
 				 std::string& debug_output,
-				 ftxui::ScreenInteractive& screen,
-				 jubiman::WordSearch& search
+				 jubiman::WordSearch& search,
+				 std::stack<State>& previous_states
 				 );
 bool handleColorEdit(const ftxui::Event& event,
-					 std::string& input_text,
+					 const std::string& input_text,
 					 ftxui::ColoredText*& c_input_text,
-					 std::vector<ftxui::Element>& input_components,
-					 int& current_input, Mode& mode,
+					 Mode& mode,
 					 bool& modal_open,
-					 jubiman::WordSearch& search
+					 jubiman::WordSearch& search,
+					 std::stack<State>& previous_states
 					 );
 std::wregex hiragana_regex(L"[\u3041-\u3096]");
 std::wregex katakana_regex(L"[\u30A0-\u30FF]");
@@ -91,6 +99,7 @@ void renderTUI() {
 	std::string debug_output;
 	std::vector<Element> guesses = std::vector<Element>();
 	std::vector<Element> input_components = std::vector<Element>();
+	std::stack<State> previous_states;
 
 	for (int i = 0; i < 10; i++) {
 		std::string str;
@@ -134,9 +143,27 @@ void renderTUI() {
 	}) | CatchEvent([&](const Event& event) {
 		switch (mode) {
 			case input:
-				return handleInput(event, input_text, c_input_text, input_components, current_input, mode, modal_open, settings_modal_open, clipboard_notification_open, debug_output, screen, search);
+				return handleInput(event,
+								   input_text,
+								   c_input_text,
+								   input_components,
+								   current_input,
+								   mode,
+								   settings_modal_open,
+								   clipboard_notification_open,
+								   debug_output,
+								   search,
+								   previous_states
+								   );
 			case color_edit:
-				return handleColorEdit(event, input_text, c_input_text, input_components, current_input, mode, modal_open, search);
+				return handleColorEdit(event,
+									   input_text,
+									   c_input_text,
+									   mode,
+									   modal_open,
+									   search,
+									   previous_states
+									   );
 		}
 		return false;
 	});
@@ -169,7 +196,13 @@ void renderTUI() {
 	auto restart_modal = Container::Vertical({
 		Button("Confirm", [&] {
 			restart_modal_open = false;
-			reset_board(input_components, c_input_text, mode, current_input, search);
+			reset_board(input_components,
+						c_input_text,
+						mode,
+						current_input,
+						search,
+						previous_states
+						);
 		}, {
 				.transform = [](const EntryState& s) {
 					auto element = text(s.label) | color(ftxui::Color::Green) | border;
@@ -197,7 +230,6 @@ void renderTUI() {
 		Button("Confirm", [&] {
 			modal_open = false;
 			mode = input;
-			// TODO: first have to convert the colorings to the regex thingy. might want to rewrite that a bit as well
 
 			search.update_colors(c_input_text);
 			size_t matches = search.filter_words();
@@ -354,7 +386,8 @@ void renderTUI() {
 void reset_board(std::vector<ftxui::Element>& input_components,
 				 ftxui::ColoredText*& c_input_text,
 				 Mode& mode, int& current_input,
-				 jubiman::WordSearch& search
+				 jubiman::WordSearch& search,
+				 std::stack<State>& previous_states
 				 ) {
 	using namespace ftxui;
 	c_input_text->unfocus();
@@ -367,7 +400,13 @@ void reset_board(std::vector<ftxui::Element>& input_components,
 	mode = input;
 	current_input = 0;
 
-	// TODO: actually reset the search stuff
+	// clear the previous states
+	while (!previous_states.empty()) {
+		previous_states.pop();
+	}
+
+	// reset the search object
+	search.reset();
 }
 
 bool handleInput(const ftxui::Event& event,
@@ -376,15 +415,36 @@ bool handleInput(const ftxui::Event& event,
 				 std::vector<ftxui::Element>& input_components,
 				 int& current_input,
 				 Mode& mode,
-				 bool& modal_open,
 				 bool& settings_modal_open,
                  bool& clipboard_notification_open,
 				 std::string& debug_output,
-				 ftxui::ScreenInteractive& screen,
-				 jubiman::WordSearch& search
+				 jubiman::WordSearch& search,
+				 std::stack<State>& previous_states
 				 ) {
 	using namespace ftxui;
 	if (event.is_character()) {
+		// if the input character is 26 converted from string to char
+		if (event.character() == "\x1A") {
+			if (!previous_states.empty()) {
+				State last_state = previous_states.top();
+				previous_states.pop();
+
+				// TODO TEST AND FIX THIS SHIT
+				input_text = last_state.input_text;
+				search = last_state.search;
+
+				c_input_text->reset();
+				c_input_text = last_state.c_input_text;
+
+				search.lock_colors(c_input_text);
+				search.update_colors(c_input_text);
+				size_t matches = search.filter_words();
+				search.calculate_best_word();
+				debug_output = "Matches: " + std::to_string(matches);
+			}
+			return true;
+		}
+
 		if (c_input_text->length() >= 5) return true;
 		// try to read a wide character from the input
 		std::wstring wide_char = converter.from_bytes(event.character());
@@ -432,22 +492,34 @@ bool handleInput(const ftxui::Event& event,
         return true;
     } else if (event == Event::F5) {
 		// reset the board
-		reset_board(input_components, c_input_text, mode, current_input, search);
+		reset_board(input_components,
+					c_input_text,
+					mode,
+					current_input,
+					search,
+					previous_states
+					);
 		return true;
 	}
 	return false;
 }
 
 bool handleColorEdit(const ftxui::Event& event,
-					 std::string& input_text,
+					 const std::string& input_text,
 					 ftxui::ColoredText*& c_input_text,
-					 std::vector<ftxui::Element>& input_components,
-					 int& current_input,
 					 Mode& mode,
-					 bool& modal_open, jubiman::WordSearch& search) {
+					 bool& modal_open,
+					 jubiman::WordSearch& search,
+					 std::stack<State>& previous_states
+					 ) {
 	using namespace ftxui;
 	if (event == Event::Return) {
 		// TODO: add an undo button? Snapshot last state or all states?
+		State current_state {
+				.input_text = input_text,
+				.search = search
+		};
+		previous_states.push(current_state);
 		modal_open = true;
 		// TODO: wait for it's return value?
 		return true;

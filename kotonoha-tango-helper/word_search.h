@@ -27,6 +27,8 @@ namespace jubiman {
 
 		void lock_colors(ftxui::ColoredText *&pText);
 
+		void reset();
+
 	private:
 		ftxui::ColoredText *currentText;
 
