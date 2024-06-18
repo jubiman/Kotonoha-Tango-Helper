@@ -198,13 +198,6 @@ void jubiman::WordSearch::calculate_best_word() {
 		}
 	}
 
-	// Output the information map to a file
-	std::ofstream fs("output/information_map.csv", std::ios::out);
-	for (const auto& [key, value] : information_map) {
-		fs << std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t>{}.to_bytes(key) << "," << value << std::endl;
-	}
-	fs.close();
-
 	// Convert the best word to a string
 	best_word = std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t>{}.to_bytes(wbest_word);
 }
