@@ -1,6 +1,18 @@
 cmake_minimum_required(VERSION 3.26)
 project(Kotonoha_Tango_Helper)
 
+# Disable clip examples and tests
+set(CLIP_EXAMPLES OFF CACHE BOOL "Compile clip examples")
+set(CLIP_TESTS OFF CACHE BOOL "Compile clip tests")
+
+# In case that you have ${PNG_LIBRARY} set to support copy/paste images on Linux
+#set(CLIP_X11_PNG_LIBRARY "${PNG_LIBRARY}")
+
+# Add clip subdirectory to compile the library
+add_subdirectory(clip)
+
+include_directories(clip)
+
 # Include FTXUI
 include(FetchContent)
 
@@ -32,4 +44,4 @@ add_executable(Kotonoha_Tango_Helper
         kotonoha-tango-helper/translation.h
 )
 
-target_link_libraries(Kotonoha_Tango_Helper PRIVATE ftxui::screen ftxui::dom ftxui::component)
+target_link_libraries(Kotonoha_Tango_Helper PRIVATE ftxui::screen ftxui::dom ftxui::component clip)

@@ -100,5 +100,4 @@ namespace ftxui {
 	Element colored_text(const std::string& text, int, Color fg = Color::Default, Color bg = Color::Default);
 }
 
-
 #endif //KOTONOHA_TANGO_HELPER_COLORED_TEXT_H

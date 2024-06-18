@@ -7,12 +7,14 @@
 #include <fstream>
 #include <unordered_set>
 #include <map>
+#include <algorithm>
+#include <cmath>
 
 #include "colored_text.h"
 namespace jubiman {
 	class WordSearch {
 	public:
-		WordSearch(ftxui::ColoredText *currentText) : currentText(currentText) { init(); }
+		explicit WordSearch(ftxui::ColoredText *currentText) : currentText(currentText) { init(); }
 		size_t filter_words();
 
 		void update_colors(ftxui::ColoredText *pText);

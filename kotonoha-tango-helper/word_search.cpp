@@ -115,7 +115,9 @@ void jubiman::WordSearch::update_colors(ftxui::ColoredText *pText) {
 	int i = 0;
 	for (const auto& character : *pText) {
 		if (character.getBgColor() == ftxui::Color::Default) {
-			bad_letters += character.getWideCharacter();
+			// Check if this letter is a green or yellow letter, and add it to the bad letters if it is not
+			if (good_letters.find(character.getWideCharacter()) == good_letters.end() && yellow_letters.find(character.getWideCharacter()) == yellow_letters.end())
+				bad_letters += character.getWideCharacter();
 		} else if (character.getBgColor() == ftxui::Color::Green) {
 			good_letters[character.getWideCharacter()] |= 1 << i;
 		} else if (character.getBgColor() == ftxui::Color::Yellow) {
@@ -149,35 +151,59 @@ void jubiman::WordSearch::calculate_best_word() {
 		best_word = std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t>{}.to_bytes(*skimmed_words.begin());
 		return;
 	}
-    // Create a frequency map of all the letters in the remaining words
-    std::unordered_map<wchar_t, int> frequency_map;
-    for (const auto& word : skimmed_words) {
-        for (const auto& letter : word) {
-            frequency_map[letter]++;
-        }
-    }
 
-    // Sort the frequency map in descending order
-    std::vector<std::pair<wchar_t, int>> sorted_map(frequency_map.begin(), frequency_map.end());
-    std::sort(sorted_map.begin(), sorted_map.end(), [](const auto& a, const auto& b) {
-        return a.second > b.second;
-    });
+	// Create a frequency map of all the letters in the remaining words
+	std::unordered_map<wchar_t, int> frequency_map;
+	for (const auto& word : skimmed_words) {
+		for (const auto& letter : word) {
+			frequency_map[letter]++;
+		}
+	}
 
-    // Select the word that contains the most letters from the top of the frequency map
-    std::wstring wbest_word;
-    int max_count = 0;
-    for (const auto& word : words) {
-        int count = 0;
-        for (const auto& letter : word) {
-            if (frequency_map[letter] > 0) {
-                count++;
-            }
-        }
-        if (count > max_count) {
-            max_count = count;
-            wbest_word = word;
-        }
-    }
+	// Sort the frequency map in descending order
+	std::vector<std::pair<wchar_t, int>> sorted_map(frequency_map.begin(), frequency_map.end());
+	std::sort(sorted_map.begin(), sorted_map.end(), [](const auto& a, const auto& b) {
+		return a.second > b.second;
+	});
+
+	// Try to find out which words give the most information when used
+	const int deduction = (int)skimmed_words.size() / 10;
+	std::unordered_map<std::wstring, int32_t> information_map;
+	for (const auto& word : skimmed_words) {
+		int information = 0;
+		std::unordered_set<wchar_t> had_letters;
+		for (const auto& letter : word) {
+			if (had_letters.find(letter) != had_letters.end()) {
+				information -= deduction;
+				continue;
+			}
+			for (const auto& [key, value] : sorted_map) {
+				if (key == letter) {
+					information += value;
+					had_letters.insert(letter);
+					break;
+				}
+			}
+		}
+		information_map[word] = information;
+	}
+
+	// Find the word with the highest information
+	std::wstring wbest_word;
+	int32_t max_information = 0;
+	for (const auto& [key, value] : information_map) {
+		if (value > max_information) {
+			max_information = value;
+			wbest_word = key;
+		}
+	}
+
+	// Output the information map to a file
+	std::ofstream fs("output/information_map.csv", std::ios::out);
+	for (const auto& [key, value] : information_map) {
+		fs << std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t>{}.to_bytes(key) << "," << value << std::endl;
+	}
+	fs.close();
 
 	// Convert the best word to a string
 	best_word = std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t>{}.to_bytes(wbest_word);

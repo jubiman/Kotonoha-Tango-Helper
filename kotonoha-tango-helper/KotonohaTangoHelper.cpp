@@ -11,6 +11,9 @@
 #include "ftxui/component/component.hpp"
 #include "ftxui/component/screen_interactive.hpp"
 
+// include Clip
+#include "clip.h"
+
 #include "word_search.h"
 #include "colored_text.h"
 #include "constants.h"
@@ -56,7 +59,6 @@ jubiman::translation translation;
 
 
 int main() {
-    // jubiman::Regex reg;
     std::wstring inp, bl, dgl, gl, yl;
 #ifdef _WIN32
     std::wcin.imbue(std::locale("Japanese"));
@@ -97,7 +99,7 @@ void renderTUI() {
 		}
 		Element input = colored_text(str);
 		input_components.push_back(input);
-		guesses.push_back(input | ftxui::size(WIDTH, EQUAL, i < 5 ? 17 : 10));
+		guesses.push_back(input | size(WIDTH, EQUAL, i < 5 ? 17 : 10));
 	}
 
 	int current_input = 0;
@@ -204,7 +206,7 @@ void renderTUI() {
 
 			// move to the next input
 			int next_input = ++current_input;
-			if (next_input == 10 || matches <= 1) {
+			if (next_input == 10) {
 				restart_modal_open = true;
 				return;
 			}
@@ -423,9 +425,7 @@ bool handleInput(const ftxui::Event& event,
 		return true;
 	} else if (event == Event::F3) {
         // copy the best word to the clipboard
-        std::wstring best_word = converter.from_bytes(search.getBestWord());
-        std::wstring command = L"echo " + best_word + L" | clip";
-        system(converter.to_bytes(command).c_str());
+        clip::set_text(search.getBestWord());
 
         // show a notification for 2 seconds using the modal TODO: (configurable)
         clipboard_notification_open = true;
