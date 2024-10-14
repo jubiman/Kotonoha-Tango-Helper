@@ -8,31 +8,33 @@
 #include <unordered_set>
 #include <map>
 #include <algorithm>
-#include <cmath>
 
 #include "colored_text.h"
 namespace jubiman {
 	class WordSearch {
 	public:
 		explicit WordSearch(ftxui::ColoredText *currentText) : currentText(currentText) { init(); }
+		WordSearch(const WordSearch& other) : currentText(other.currentText) { init(); }
+		WordSearch& operator=(const WordSearch& other) {
+			if (this != &other) {
+				currentText = other.currentText;
+				init();
+			}
+			return *this;
+		}
+
 		size_t filter_words();
-
 		void update_colors(ftxui::ColoredText *pText);
-
-		size_t getWordsLeft();
-
+		size_t getWordsLeft() const;
 		std::string getBestWord();
-
 		void calculate_best_word();
-
 		void lock_colors(ftxui::ColoredText *&pText);
-
 		void reset();
 
 	private:
-		ftxui::ColoredText *currentText;
-
 		void init();
+
+		ftxui::ColoredText *currentText;
 
 		std::unordered_set<std::wstring> words;
 		std::unordered_set<std::wstring> skimmed_words;
@@ -42,6 +44,8 @@ namespace jubiman {
 		std::map<std::wstring, uint8_t> bad_pos_letters;
 		std::map<std::wstring, uint8_t> good_letters;	// char, pos
 		std::map<std::wstring, uint8_t> yellow_letters;	// char, pos
+
+		std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
 	};
 } // namespace jubiman
 

@@ -5,10 +5,10 @@
 #ifndef KOTONOHA_TANGO_HELPER_TRANSLATION_H
 #define KOTONOHA_TANGO_HELPER_TRANSLATION_H
 #include <string>
-#include <fstream>
 #include <filesystem>
 #include <map>
 #include <vector>
+#include <fstream>
 
 namespace jubiman {
 	class translation {
@@ -28,7 +28,7 @@ namespace jubiman {
 		std::map<std::wstring, std::wstring>* currentLanguage;
 		std::map<std::wstring, std::map<std::wstring, std::wstring>> languages;
 
-		std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter;
+		std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
 
 		std::vector<std::string> settings_entries;
 		std::vector<std::string> language_names;

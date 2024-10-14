@@ -6,7 +6,6 @@
 
 void jubiman::WordSearch::init() {
 	// Load words
-	std::wstring line;
 #ifdef _WIN32
 	std::wifstream fs(L"data/data_sorted.csv", std::ios::in);
 	fs.imbue(std::locale(std::locale::empty(), new std::codecvt_utf8<wchar_t, 0x10ffff, std::consume_header>));
@@ -15,6 +14,7 @@ void jubiman::WordSearch::init() {
 	fs.imbue(std::locale(std::locale("C.UTF-8"), new std::codecvt_utf8<wchar_t, 0x10ffff, std::consume_header>));
 #endif
 	if (fs.is_open()) {
+		std::wstring line;
 		while (std::getline(fs, line))
 			words.insert(line);
 		fs.close();
@@ -40,9 +40,6 @@ std::vector<uint8_t> unpack_flags(uint8_t flags) {
 
 /**
  * Filter the words based on the input and the colors of the input
- * @param words The words to filter
- * @param skimmed_words The words to filter from
- * @param input The input to filter by
  */
 size_t jubiman::WordSearch::filter_words() {
 	// Loop over all the words
@@ -50,24 +47,19 @@ size_t jubiman::WordSearch::filter_words() {
 	for (const auto& word : skimmed_words) {
 		// Skip if it contains a used letter
 		for (const auto& letter : word) {
-			size_t pos = bad_letters.find(letter);
-			if (pos != std::wstring::npos) {
+			if (size_t pos = bad_letters.find(letter); pos != std::wstring::npos) {
 				// Check if we have a yellow letter and/or a good letter
-				auto yellow_pos = yellow_letters.find(std::wstring(1, letter));
-				if (yellow_pos != yellow_letters.end()) {
+				if (auto yellow_pos = yellow_letters.find(std::wstring(1, letter)); yellow_pos != yellow_letters.end()) {
 					// unpack the positions of the yellow letter from flags into a vector that contains the indices of the yellow letters
-					auto pos_vec = unpack_flags(yellow_pos->second);
 					// check if the pos vector contains the position of the letter, if it does not, we can still use the word
-					if (std::find(pos_vec.begin(), pos_vec.end(), pos) != pos_vec.end()) {
+					if (auto pos_vec = unpack_flags(yellow_pos->second); std::find(pos_vec.begin(), pos_vec.end(), pos) != pos_vec.end()) {
 						continue;
 					}
 				}
-				auto good_pos = good_letters.find(std::wstring(1, letter));
-				if (good_pos != good_letters.end()) {
+				if (auto good_pos = good_letters.find(std::wstring(1, letter)); good_pos != good_letters.end()) {
 					// unpack the positions of the good letter from flags into a vector that contains the indices of the good letters
-					auto pos_vec = unpack_flags(good_pos->second);
 					// check if the pos vector contains the position of the letter, if it does not, we can still use the word
-					if (std::find(pos_vec.begin(), pos_vec.end(), pos) != pos_vec.end()) {
+					if (auto pos_vec = unpack_flags(good_pos->second); std::find(pos_vec.begin(), pos_vec.end(), pos) != pos_vec.end()) {
 						continue;
 					}
 				}
@@ -76,17 +68,17 @@ size_t jubiman::WordSearch::filter_words() {
 		}
 
 		// Skip if it does not have the good letters in the right position
-		for (const auto& gl : good_letters) {
+		for (const auto&[letter, position] : good_letters) {
 			// Unpack the positions of the good letter from flags into a vector that contains the indices of the good letters
-			std::vector<uint8_t> pos_vec = unpack_flags(gl.second);
+			std::vector<uint8_t> pos_vec = unpack_flags(position);
 			for (const auto& pos : pos_vec)
-				if (std::wstring(1, word.at(pos)) != gl.first)
+				if (std::wstring(1, word.at(pos)) != letter)
 					goto next;
 		}
 
 		// Skip if it has a yellow letter in a known position
-		for (const auto& yl : yellow_letters) {
-			size_t pos = word.find(yl.first);
+		for (const auto&[letter, position] : yellow_letters) {
+			size_t pos = word.find(letter);
 			if (pos == std::wstring::npos)
 				goto next;
 
@@ -96,15 +88,16 @@ size_t jubiman::WordSearch::filter_words() {
 				// Add position to the vector
 				pos_vec.push_back(pos);
 				// Get the next occurrence from the current position
-				pos = word.find(yl.first, pos + yl.first.length());
+				pos = word.find(letter, pos + letter.length());
 			}
 			for (const auto& it : pos_vec)
-				if (yl.second & 1 << it)
+				if (position & 1 << it)
 					goto next;
 		}
 
 		results.insert(word);
-		next: continue;
+		next: continue; // word_search.cpp:100:9: warning: label at end of compound statement only available with ‘-std=c++2b’ or ‘-std=gnu++2b’ [-Wc++23-extensions]
+
 	}
 	this->skimmed_words = results;
 	return results.size();
@@ -125,8 +118,8 @@ void jubiman::WordSearch::update_colors(ftxui::ColoredText *pText) {
 				// If it is, we need to check how many times it occurs in the word
 				// If it occurs more than once, we need to add the position to the yellow_letters
 				// If it occurs only once, we do not need to add it to the yellow_letters
-				size_t pos = pText->getCharacters().find(character.getCharacter());
-				if (pText->getCharacters().find(character.getCharacter(), pos + 1) != std::wstring::npos) {
+				if (const size_t pos = pText->getCharacters().find(character.getCharacter());
+					pText->getCharacters().find(character.getCharacter(), pos + 1) != std::wstring::npos) {
 					yellow_letters[character.getWideCharacter()] |= 1 << i;
 				}
 			} else {
@@ -137,7 +130,7 @@ void jubiman::WordSearch::update_colors(ftxui::ColoredText *pText) {
 	}
 }
 
-size_t jubiman::WordSearch::getWordsLeft() {
+size_t jubiman::WordSearch::getWordsLeft() const {
 	return skimmed_words.size();
 }
 
@@ -147,7 +140,7 @@ std::string jubiman::WordSearch::getBestWord() {
 
 void jubiman::WordSearch::calculate_best_word() {
 	if (skimmed_words.size() == 1) {
-		best_word = std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t>{}.to_bytes(*skimmed_words.begin());
+		best_word = converter.to_bytes(*skimmed_words.begin());
 		return;
 	}
 
@@ -166,7 +159,7 @@ void jubiman::WordSearch::calculate_best_word() {
 	});
 
 	// Try to find out which words give the most information when used
-	const int deduction = (int)skimmed_words.size() / 10;
+	const int deduction = static_cast<int>(skimmed_words.size()) / 10;
 	std::unordered_map<std::wstring, int32_t> information_map;
 	for (const auto& word : skimmed_words) {
 		int information = 0;
@@ -198,7 +191,7 @@ void jubiman::WordSearch::calculate_best_word() {
 	}
 
 	// Convert the best word to a string
-	best_word = std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t>{}.to_bytes(wbest_word);
+	best_word = converter.to_bytes(wbest_word);
 }
 
 void jubiman::WordSearch::lock_colors(ftxui::ColoredText *&pText) {
@@ -232,7 +225,7 @@ void jubiman::WordSearch::lock_colors(ftxui::ColoredText *&pText) {
         auto pos = pText->getWideCharacters().find(key.at(0));
         while (pos != std::wstring::npos) {
             // If the position is not in the good_letters map, color it yellow
-            if ((value & (1 << pos)) == 0) {
+            if ((value & 1 << pos) == 0) {
                 pText->lockColor(pos, ftxui::Color::Yellow);
             }
             pos = pText->getWideCharacters().find(key.at(0), pos + 1);

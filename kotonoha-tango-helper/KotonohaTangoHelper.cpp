@@ -32,17 +32,17 @@ struct State {
 
 
 void renderTUI();
-void reset_board(std::vector<ftxui::Element>& input_components,
-				 ftxui::ColoredText*& c_input_text,
-				 Mode& mode,
-				 int& current_input,
-				 jubiman::WordSearch& search,
-				 std::stack<State>& previous_states
-				 );
+void reset_board(const std::vector<ftxui::Element>& input_components,
+                 ftxui::ColoredText*& c_input_text,
+                 Mode& mode,
+                 int& current_input,
+                 jubiman::WordSearch& search,
+                 std::stack<State>& previous_states
+);
 bool handleInput(const ftxui::Event& event,
 				 std::string& input_text,
 				 ftxui::ColoredText*& c_input_text,
-				 std::vector<ftxui::Element>& input_components,
+				 const std::vector<ftxui::Element>& input_components,
 				 int& current_input,
 				 Mode& mode,
 				 bool& settings_modal_open,
@@ -56,13 +56,13 @@ bool handleColorEdit(const ftxui::Event& event,
 					 ftxui::ColoredText*& c_input_text,
 					 Mode& mode,
 					 bool& modal_open,
-					 jubiman::WordSearch& search,
+					 const jubiman::WordSearch& search,
 					 std::stack<State>& previous_states
 					 );
 std::wregex hiragana_regex(L"[\u3041-\u3096]");
 std::wregex katakana_regex(L"[\u30A0-\u30FF]");
 std::wregex japanese_regex(L"[\u3041-\u3096\u30A0-\u30FF]");
-std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter;
+std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
 jubiman::translation translation;
 
 
@@ -97,8 +97,8 @@ void renderTUI() {
 	auto screen = ScreenInteractive::Fullscreen();
 
 	std::string debug_output;
-	std::vector<Element> guesses = std::vector<Element>();
-	std::vector<Element> input_components = std::vector<Element>();
+	auto guesses = std::vector<Element>();
+	auto input_components = std::vector<Element>();
 	std::stack<State> previous_states;
 
 	for (int i = 0; i < 10; i++) {
@@ -130,10 +130,10 @@ void renderTUI() {
 				// translate all the characters to katakana
 				std::wstring wide_input = converter.from_bytes(input_text);
 				std::wstring replaced = wide_input;
-				for (std::wsregex_iterator i = std::wsregex_iterator(wide_input.begin(), wide_input.end(), hiragana_regex);
-					 i != std::wsregex_iterator(); ++i) {
+				for (auto i = std::wsregex_iterator(wide_input.begin(), wide_input.end(), hiragana_regex);
+				     i != std::wsregex_iterator(); ++i) {
 					const std::wsmatch& match = *i;
-					std::wstring replacement = std::wstring(1, match.str(0)[0] + 0x60);
+					auto replacement = std::wstring(1, match.str(0)[0] + 0x60);
 					replaced = std::regex_replace(replaced, std::wregex(match.str(0)), replacement);
 				}
 				// Tell the input text component to update
@@ -205,7 +205,7 @@ void renderTUI() {
 						);
 		}, {
 				.transform = [](const EntryState& s) {
-					auto element = text(s.label) | color(ftxui::Color::Green) | border;
+					auto element = text(s.label) | color(Color::Green) | border;
 					if (s.active) {
 						element |= bold;
 					}
@@ -216,7 +216,7 @@ void renderTUI() {
 			restart_modal_open = false;
 		}, {
 				.transform = [](const EntryState& s) {
-					auto element = text(s.label) | color(ftxui::Color::Red) | border;
+					auto element = text(s.label) | color(Color::Red) | border;
 					if (s.active) {
 						element |= bold;
 					}
@@ -232,12 +232,12 @@ void renderTUI() {
 			mode = input;
 
 			search.update_colors(c_input_text);
-			size_t matches = search.filter_words();
+			const size_t matches = search.filter_words();
 			search.calculate_best_word();
 			debug_output = "Matches: " + std::to_string(matches);
 
 			// move to the next input
-			int next_input = ++current_input;
+			const int next_input = ++current_input;
 			if (next_input == 10) {
 				restart_modal_open = true;
 				return;
@@ -247,7 +247,7 @@ void renderTUI() {
 			c_input_text->focus();
 		}, {
 				.transform = [](const EntryState& s) {
-					auto element = text(s.label) | color(ftxui::Color::Green) | border;
+					auto element = text(s.label) | color(Color::Green) | border;
 					if (s.active) {
 						element |= bold;
 					}
@@ -258,7 +258,7 @@ void renderTUI() {
 			modal_open = false;
 		}, {
 				.transform = [](const EntryState& s) {
-					auto element = text(s.label) | color(ftxui::Color::Red) | border;
+					auto element = text(s.label) | color(Color::Red) | border;
 					if (s.active) {
 						element |= bold;
 					}
@@ -294,6 +294,10 @@ void renderTUI() {
 						language_modal_open = true;
 						settings_modal_open = false;
 						break;
+					case 1:
+						// exit the program
+						screen.Exit();
+						break;
 					default: // back
 						settings_modal_open = false;
 						break;
@@ -307,7 +311,7 @@ void renderTUI() {
             clipboard_notification_open = false;
         }, {
                 .transform = [](const EntryState& s) {
-                    auto element = text(s.label) | color(ftxui::Color::Green) | border | center
+                    auto element = text(s.label) | color(Color::Green) | border | center
                             | size(WIDTH, GREATER_THAN, 15) | size(HEIGHT, LESS_THAN, 5);
                     if (s.active) {
                         element |= bold;
@@ -320,7 +324,7 @@ void renderTUI() {
 
 	confirm_modal |= Renderer([&](Element inner) {
 		return vbox({
-							text("Are you sure you want to submit?") | color(Color::Red) | center,
+							text(translation.translate("confirm_submit_text")) | color(Color::Red) | center,
 							separator(),
 							std::move(inner),
 					})
@@ -331,7 +335,7 @@ void renderTUI() {
 	});
 	restart_modal |= Renderer([&](Element inner) {
 		return vbox({
-							text("Do you want to restart?") | center,
+							text(translation.translate("confirm_restart_text")) | center,
 							separator(),
 							std::move(inner),
 		})
@@ -383,12 +387,12 @@ void renderTUI() {
 	screen.Loop(renderer);
 }
 
-void reset_board(std::vector<ftxui::Element>& input_components,
-				 ftxui::ColoredText*& c_input_text,
-				 Mode& mode, int& current_input,
-				 jubiman::WordSearch& search,
-				 std::stack<State>& previous_states
-				 ) {
+void reset_board(const std::vector<ftxui::Element>& input_components,
+                 ftxui::ColoredText*& c_input_text,
+                 Mode& mode, int& current_input,
+                 jubiman::WordSearch& search,
+                 std::stack<State>& previous_states
+) {
 	using namespace ftxui;
 	c_input_text->unfocus();
 	for (const auto& input : input_components) {
@@ -412,7 +416,7 @@ void reset_board(std::vector<ftxui::Element>& input_components,
 bool handleInput(const ftxui::Event& event,
 				 std::string& input_text,
 				 ftxui::ColoredText*& c_input_text,
-				 std::vector<ftxui::Element>& input_components,
+				 const std::vector<ftxui::Element>& input_components,
 				 int& current_input,
 				 Mode& mode,
 				 bool& settings_modal_open,
@@ -438,7 +442,7 @@ bool handleInput(const ftxui::Event& event,
 
 				search.lock_colors(c_input_text);
 				search.update_colors(c_input_text);
-				size_t matches = search.filter_words();
+				const size_t matches = search.filter_words();
 				search.calculate_best_word();
 				debug_output = "Matches: " + std::to_string(matches);
 			}
@@ -447,28 +451,33 @@ bool handleInput(const ftxui::Event& event,
 
 		if (c_input_text->length() >= 5) return true;
 		// try to read a wide character from the input
-		std::wstring wide_char = converter.from_bytes(event.character());
 
 		// if input is not hiragana or katakana, ignore it (return true)
-		if (!std::regex_match(wide_char, japanese_regex)) {
+		if (const std::wstring wide_char = converter.from_bytes(event.character()); !std::regex_match(wide_char, japanese_regex)) {
 			return true;
 		}
 		return false;
-	} else if (event == Event::Backspace) {
+	}
+	if (event == Event::Backspace) {
 		// remove the last character from the input
 		c_input_text->handleBackspace();
 		return true;
-	} else if (event == Event::Delete) {
+	}
+	if (event == Event::Delete) {
 		c_input_text->handleDelete();
-	} else if (event == Event::ArrowLeft) {
+		return false;
+	}
+	if (event == Event::ArrowLeft) {
 		// move the cursor left
 		c_input_text->moveCursorLeft();
 		return true;
-	} else if (event == Event::ArrowRight) {
+	}
+	if (event == Event::ArrowRight) {
 		// move the cursor right
 		c_input_text->moveCursorRight();
 		return true;
-	} else if (event == Event::Return) {
+	}
+	if (event == Event::Return) {
 		if (c_input_text->length() >= 5) {
 			// Color known letters and lock those colors
 			search.lock_colors(c_input_text);
@@ -477,28 +486,32 @@ bool handleInput(const ftxui::Event& event,
 			c_input_text->colorMode();
 		}
 		return true;
-	} else if (event.is_mouse()) {
+	}
+	if (event.is_mouse()) {
 		return false;
-	} else if (event == Event::F2) {
+	}
+	if (event == Event::F2) {
 		// Open the settings modal
 		settings_modal_open = true;
 		return true;
-	} else if (event == Event::F3) {
-        // copy the best word to the clipboard
-        clip::set_text(search.getBestWord());
+	}
+	if (event == Event::F3) {
+		// copy the best word to the clipboard
+		clip::set_text(search.getBestWord());
 
-        // show a notification for 2 seconds using the modal TODO: (configurable)
-        clipboard_notification_open = true;
-        return true;
-    } else if (event == Event::F5) {
+		// show a notification for 2 seconds using the modal TODO: (configurable)
+		clipboard_notification_open = true;
+		return true;
+	}
+	if (event == Event::F5) {
 		// reset the board
 		reset_board(input_components,
-					c_input_text,
-					mode,
-					current_input,
-					search,
-					previous_states
-					);
+		            c_input_text,
+		            mode,
+		            current_input,
+		            search,
+		            previous_states
+		);
 		return true;
 	}
 	return false;
@@ -509,13 +522,13 @@ bool handleColorEdit(const ftxui::Event& event,
 					 ftxui::ColoredText*& c_input_text,
 					 Mode& mode,
 					 bool& modal_open,
-					 jubiman::WordSearch& search,
+					 const jubiman::WordSearch& search,
 					 std::stack<State>& previous_states
 					 ) {
 	using namespace ftxui;
 	if (event == Event::Return) {
 		// TODO: add an undo button? Snapshot last state or all states?
-		State current_state {
+		const State current_state {
 				.input_text = input_text,
 				.search = search
 		};
@@ -523,25 +536,31 @@ bool handleColorEdit(const ftxui::Event& event,
 		modal_open = true;
 		// TODO: wait for it's return value?
 		return true;
-	} else if (event == Event::ArrowLeft) {
+	}
+	if (event == Event::ArrowLeft) {
 		// move the cursor left
 		c_input_text->moveCursorLeft();
 		return true;
-	} else if (event == Event::ArrowRight) {
+	}
+	if (event == Event::ArrowRight) {
 		// move the cursor right
 		c_input_text->moveCursorRight();
 		return true;
-	} else if (event.is_character()) {
+	}
+	if (event.is_character()) {
 		return true;
-	} else if (event == Event::ArrowUp) {
+	}
+	if (event == Event::ArrowUp) {
 		// rotate the color of the character at the cursor up
 		c_input_text->rotateColor(true);
 		return true;
-	} else if (event == Event::ArrowDown) {
+	}
+	if (event == Event::ArrowDown) {
 		// rotate the color of the character at the cursor down
 		c_input_text->rotateColor(false);
 		return true;
-	} else if (event == Event::F5) {
+	}
+	if (event == Event::F5) {
 		// go back to input mode
 		mode = input;
 		return true;

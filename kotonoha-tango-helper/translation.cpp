@@ -4,6 +4,7 @@
 
 #include "translation.h"
 
+
 /**
  * Constructor
  */
@@ -58,13 +59,12 @@ jubiman::translation::translation() {
  * @return
  */
 std::string jubiman::translation::translate(const std::string& key) {
-	std::wstring wideKey = converter.from_bytes(key);
+	const std::wstring wideKey = converter.from_bytes(key);
 	// make sure the key exists
 	if (currentLanguage->find(wideKey) == currentLanguage->end()) {
 		return key;
 	}
-	std::wstring wideValue = currentLanguage->at(wideKey);
-	return converter.to_bytes(wideValue);
+	return converter.to_bytes(currentLanguage->at(wideKey));
 }
 
 /**
@@ -77,8 +77,7 @@ std::string jubiman::translation::translate(const std::wstring &key) {
 	if (currentLanguage->find(key) == currentLanguage->end()) {
 		return converter.to_bytes(key);
 	}
-	std::wstring wideValue = currentLanguage->at(key);
-	return converter.to_bytes(wideValue);
+	return converter.to_bytes(currentLanguage->at(key));
 }
 
 /**
@@ -93,7 +92,7 @@ void jubiman::translation::translate_language_names() {
  * @param string
  */
 void jubiman::translation::setLanguage(const std::string& string) {
-	std::wstring wideString = converter.from_bytes(string);
+	const std::wstring wideString = converter.from_bytes(string);
 	currentLanguage = &languages[wideString];
 	retranslate();
 }
@@ -103,7 +102,7 @@ void jubiman::translation::setLanguage(const std::string& string) {
  * @param lang_name
  */
 void jubiman::translation::setLanguageFromName(const std::string& lang_name) {
-	std::wstring wideLangName = converter.from_bytes(lang_name);
+	const std::wstring wideLangName = converter.from_bytes(lang_name);
 	for (auto const& [key, val] : languages) {
 		if (val.at(L"lang_name") == wideLangName) {
 			currentLanguage = &languages[key];
@@ -119,7 +118,8 @@ void jubiman::translation::setLanguageFromName(const std::string& lang_name) {
 void jubiman::translation::translate_settings_entries() {
 	// TODO: add more settings
 	settings_entries = {
-			translate(L"language"),
+		translate(L"language"),
+		translate(L"exit")
 	};
 	settings_entries.emplace_back(translate(L"back"));
 }
@@ -132,6 +132,9 @@ void jubiman::translation::retranslate() {
 	translate_language_names();
 }
 
+/**
+ * Populate language names
+ */
 void jubiman::translation::populate() {
 	translate_settings_entries();
 	for (auto const& [key, val] : languages) {
