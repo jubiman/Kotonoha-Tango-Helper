@@ -9,13 +9,14 @@
 #include <map>
 #include <vector>
 #include <fstream>
+#include "conversion.hpp"
 
 namespace jubiman {
 	class translation {
 	public:
 		translation();
-		std::string translate(const std::string& key);
-		std::string translate(const std::wstring& key);
+		std::string translate(const std::string& key) const;
+		std::string translate(const std::wstring& key) const;
 		void setLanguage(const std::string& string);
 
 		const std::vector<std::string>& getLanguages() { return language_names; }
@@ -28,7 +29,7 @@ namespace jubiman {
 		std::map<std::wstring, std::wstring>* currentLanguage;
 		std::map<std::wstring, std::map<std::wstring, std::wstring>> languages;
 
-		std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+		// std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
 
 		std::vector<std::string> settings_entries;
 		std::vector<std::string> language_names;

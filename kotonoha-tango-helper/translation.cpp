@@ -58,13 +58,13 @@ jubiman::translation::translation() {
  * @param key
  * @return
  */
-std::string jubiman::translation::translate(const std::string& key) {
-	const std::wstring wideKey = converter.from_bytes(key);
+std::string jubiman::translation::translate(const std::string& key) const {
+	const std::wstring wideKey = to_wstring(key);
 	// make sure the key exists
 	if (currentLanguage->find(wideKey) == currentLanguage->end()) {
 		return key;
 	}
-	return converter.to_bytes(currentLanguage->at(wideKey));
+	return to_string(currentLanguage->at(wideKey));
 }
 
 /**
@@ -72,12 +72,12 @@ std::string jubiman::translation::translate(const std::string& key) {
  * @param key
  * @return
  */
-std::string jubiman::translation::translate(const std::wstring &key) {
+std::string jubiman::translation::translate(const std::wstring &key) const {
 	// make sure the key exists
 	if (currentLanguage->find(key) == currentLanguage->end()) {
-		return converter.to_bytes(key);
+		return to_string(key);
 	}
-	return converter.to_bytes(currentLanguage->at(key));
+	return to_string(currentLanguage->at(key));
 }
 
 /**
@@ -92,7 +92,7 @@ void jubiman::translation::translate_language_names() {
  * @param string
  */
 void jubiman::translation::setLanguage(const std::string& string) {
-	const std::wstring wideString = converter.from_bytes(string);
+	const std::wstring wideString = to_wstring(string);
 	currentLanguage = &languages[wideString];
 	retranslate();
 }
@@ -102,7 +102,7 @@ void jubiman::translation::setLanguage(const std::string& string) {
  * @param lang_name
  */
 void jubiman::translation::setLanguageFromName(const std::string& lang_name) {
-	const std::wstring wideLangName = converter.from_bytes(lang_name);
+	const std::wstring wideLangName = to_wstring(lang_name);
 	for (auto const& [key, val] : languages) {
 		if (val.at(L"lang_name") == wideLangName) {
 			currentLanguage = &languages[key];
@@ -138,7 +138,7 @@ void jubiman::translation::retranslate() {
 void jubiman::translation::populate() {
 	translate_settings_entries();
 	for (auto const& [key, val] : languages) {
-		language_names.emplace_back(converter.to_bytes(val.at(L"lang_name")));
+		language_names.emplace_back(to_string(val.at(L"lang_name")));
 	}
 	language_names.emplace_back(translate(L"back"));
 }

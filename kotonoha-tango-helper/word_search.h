@@ -8,8 +8,9 @@
 #include <unordered_set>
 #include <map>
 #include <algorithm>
-
+#include "conversion.hpp"
 #include "colored_text.h"
+
 namespace jubiman {
 	class WordSearch {
 	public:
@@ -36,6 +37,7 @@ namespace jubiman {
 
 		ftxui::ColoredText *currentText;
 
+		// TODO: make a it refer to the game's word list?
 		std::unordered_set<std::wstring> words;
 		std::unordered_set<std::wstring> skimmed_words;
 
@@ -45,7 +47,7 @@ namespace jubiman {
 		std::map<std::wstring, uint8_t> good_letters;	// char, pos
 		std::map<std::wstring, uint8_t> yellow_letters;	// char, pos
 
-		std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+		// std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
 	};
 } // namespace jubiman
 

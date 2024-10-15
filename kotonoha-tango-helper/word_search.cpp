@@ -140,7 +140,8 @@ std::string jubiman::WordSearch::getBestWord() {
 
 void jubiman::WordSearch::calculate_best_word() {
 	if (skimmed_words.size() == 1) {
-		best_word = converter.to_bytes(*skimmed_words.begin());
+		// best_word = converter.to_bytes(*skimmed_words.begin());
+		best_word = to_string(*skimmed_words.begin());
 		return;
 	}
 
@@ -191,7 +192,7 @@ void jubiman::WordSearch::calculate_best_word() {
 	}
 
 	// Convert the best word to a string
-	best_word = converter.to_bytes(wbest_word);
+	best_word = to_string(wbest_word);
 }
 
 void jubiman::WordSearch::lock_colors(ftxui::ColoredText *&pText) {

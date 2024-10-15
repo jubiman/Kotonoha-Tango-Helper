@@ -18,6 +18,7 @@
 #include "colored_text.h"
 #include "constants.h"
 #include "translation.h"
+#include "conversion.hpp"
 
 enum Mode {
 	input,
@@ -62,7 +63,6 @@ bool handleColorEdit(const ftxui::Event& event,
 std::wregex hiragana_regex(L"[\u3041-\u3096]");
 std::wregex katakana_regex(L"[\u30A0-\u30FF]");
 std::wregex japanese_regex(L"[\u3041-\u3096\u30A0-\u30FF]");
-std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
 jubiman::translation translation;
 
 
@@ -128,7 +128,7 @@ void renderTUI() {
 	Component text_input = Input(&input_text, {
 			.on_change = [&] {
 				// translate all the characters to katakana
-				std::wstring wide_input = converter.from_bytes(input_text);
+				std::wstring wide_input = to_wstring(input_text);
 				std::wstring replaced = wide_input;
 				for (auto i = std::wsregex_iterator(wide_input.begin(), wide_input.end(), hiragana_regex);
 				     i != std::wsregex_iterator(); ++i) {
@@ -137,7 +137,7 @@ void renderTUI() {
 					replaced = std::regex_replace(replaced, std::wregex(match.str(0)), replacement);
 				}
 				// Tell the input text component to update
-				c_input_text->insertText(converter.to_bytes(replaced));
+				c_input_text->insertText(to_string(replaced));
 				input_text = "";
 			},
 	}) | CatchEvent([&](const Event& event) {
@@ -453,7 +453,7 @@ bool handleInput(const ftxui::Event& event,
 		// try to read a wide character from the input
 
 		// if input is not hiragana or katakana, ignore it (return true)
-		if (const std::wstring wide_char = converter.from_bytes(event.character()); !std::regex_match(wide_char, japanese_regex)) {
+		if (const std::wstring wide_char = to_wstring(event.character()); !std::regex_match(wide_char, japanese_regex)) {
 			return true;
 		}
 		return false;

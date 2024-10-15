@@ -42,6 +42,9 @@ add_executable(Kotonoha_Tango_Helper
         kotonoha-tango-helper/word_search.h
         kotonoha-tango-helper/translation.cpp
         kotonoha-tango-helper/translation.h
+        kotonoha-tango-helper/game.cpp
+        kotonoha-tango-helper/game.h
+        kotonoha-tango-helper/conversion.hpp
 )
 
 target_link_libraries(Kotonoha_Tango_Helper PRIVATE ftxui::screen ftxui::dom ftxui::component clip)
